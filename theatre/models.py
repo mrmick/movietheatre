@@ -37,7 +37,7 @@ class Showing(models.Model):
     sold_seats = models.IntegerField(default=0, blank=True)
 
     def __str__(self):
-        return f'Showing for {self.movie} in {self.room} at {self.showtime}'
+        return f'Showing for {self.movie} in {self.room.name} at {self.showtime}'
 
     def available_seats(self):
         """
