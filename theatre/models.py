@@ -33,7 +33,7 @@ class Showing(models.Model):
     """
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
     movie = models.ForeignKey(Movie, on_delete=models.CASCADE)
-    showtime = models.DateTimeField(default=timezone.now())
+    showtime = models.DateTimeField(default=timezone.now)
     sold_seats = models.IntegerField(default=0, blank=True)
 
     def __str__(self):
