@@ -36,7 +36,7 @@ class Showing(models.Model):
     showtime = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
-        return f'Showing for {self.movie} in {self.room.name} at {self.showtime}'
+        return f'Showing for {self.movie} in {self.room.name} at {self.showtime:%d/%m/%Y, %H:%M}'
 
     @property
     def sold_seats(self):
@@ -67,4 +67,7 @@ class Ticket(models.Model):
     Very simple representation of a ticket to a movie showing
     """
     showing = models.ForeignKey(Showing, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f'Ticket #{self.pk} sold for {self.showing}'
 

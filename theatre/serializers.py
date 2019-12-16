@@ -51,7 +51,7 @@ class ShowingSerializer(serializers.ModelSerializer):
 class ShowingDetailSerializer(serializers.ModelSerializer):
     room = serializers.CharField(source='room.name')
     movie = serializers.CharField(source='movie.title')
-    showtime = serializers.DateTimeField(format="%d/%m/%Y, %H:%M:%S")
+    showtime = serializers.DateTimeField(format="%d/%m/%Y, %H:%M")
 
     class Meta:
         model = Showing

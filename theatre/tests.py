@@ -1,6 +1,6 @@
 from django.test import TestCase, Client
-from theatre.models import Movie, Showing, Room
-from theatre.serializers import RoomSerializer, MovieSerializer, ShowingSerializer
+from theatre.models import Movie, Showing, Room, Ticket
+from theatre.serializers import RoomSerializer, MovieSerializer, ShowingSerializer, ShowingDetailSerializer
 from django.utils import timezone
 from django.urls import reverse
 import json
@@ -44,7 +44,11 @@ class ShowingTests(TestCase):
 
     def test_str(self):
         self.assertEqual(str(self.showing),
-                         'Showing for %s in %s at %s' % (self.movie.title, self.room.name, self.showing.showtime))
+                         'Showing for %s in %s at %s' % (self.movie.title,
+                                                         self.room.name,
+                                                         format(self.showing.showtime, "%d/%m/%Y, %H:%M")
+                                                         )
+                         )
 
     def test_available_seats_at_start(self):
         self.assertEqual(self.showing.available_seats(), self.showing.room.seats_capacity)
@@ -62,13 +66,34 @@ class ShowingTests(TestCase):
 
     def test_available_seats_after_selling_some(self):
         self.assertEqual(self.showing.available_seats(), self.showing.room.seats_capacity)
-        self.showing.sold_seats = 50
+        for i in range(50):
+            Ticket.objects.create(showing=self.showing)
+        self.assertEqual(self.showing.sold_seats, 50)
         self.assertEqual(self.showing.available_seats(), self.showing.room.seats_capacity - 50)
         # Make sure we can still see seats as available for purchase
         self.assertTrue(self.showing.seats_available())
-        self.assertTrue(self.showing.seats_available(requested=20))
-        self.assertTrue(self.showing.seats_available(requested=50))
-        self.assertFalse(self.showing.seats_available(requested=51))
+
+
+class TicketTests(TestCase):
+    def setUp(self):
+        self.room = Room.objects.create(name="Jaba Room", seats_capacity=100)
+        self.movie = Movie.objects.create(title="Star Wars")
+        self.showing = Showing.objects.create(
+            room=self.room,
+            movie=self.movie,
+            showtime=timezone.now()
+        )
+        self.ticket = Ticket.objects.create(showing=self.showing)
+
+    def test_str(self):
+        self.assertEqual(str(self.ticket),
+                         'Ticket #%d sold for Showing for %s in %s at %s' % (self.ticket.pk,
+                                                                             self.movie.title,
+                                                                             self.room.name,
+                                                                             format(self.showing.showtime,
+                                                                                    "%d/%m/%Y, %H:%M")
+                                                         )
+                         )
 
 
 class RoomListViewTests(TestCase):
@@ -156,4 +181,71 @@ class MovieListViewTests(TestCase):
                                     data=json.dumps(self.invalid_payload),
                                     content_type='application/json')
         self.assertEqual(response.status_code, 400)
+
+
+class ShowingListViewTests(TestCase):
+    def setUp(self):
+        self.room1 = Room.objects.create(name="Jaba Room", seats_capacity=100)
+        self.room2 = Room.objects.create(name="Yoda Room", seats_capacity=150)
+        self.room3 = Room.objects.create(name="Han Room", seats_capacity=100)
+        self.movie1 = Movie.objects.create(title="Star Wars: A New Hope")
+        self.movie2 = Movie.objects.create(title="Star Wars: The Empire Strikes Back")
+        self.movie3 = Movie.objects.create(title="Star Wars: Return of the Jedi")
+
+        #we really don't care about the time in the tests here, just that it exists
+        Showing.objects.create(room=self.room1, movie=self.movie1, showtime=timezone.now())
+        Showing.objects.create(room=self.room2, movie=self.movie2, showtime=timezone.now())
+        Showing.objects.create(room=self.room3, movie=self.movie3, showtime=timezone.now())
+
+        self.valid_payload = {
+            'room': self.room1.pk,
+            'movie': self.movie2.pk,
+            'showtime': format(timezone.now(), "%Y-%m-%d %H:%M")
+        }
+        self.invalid_payload1 = {
+            'room': '',
+            'movie': 2,
+            'showtime': format(timezone.now(), "%d/%m/%Y, %H:%M")
+        }
+        self.invalid_payload2 = {
+            'room': 2,
+            'movie': '',
+            'showtime': format(timezone.now(), "%d/%m/%Y, %H:%M")
+        }
+        self.invalid_payload3 = {
+            'room': 3,
+            'movie': 2,
+            'showtime': ''
+        }
+
+    def test_list_all_rooms(self):
+        response = self.client.get(reverse('showing_list_create'))
+        # make sure we get the appropriate status code
+        self.assertEqual(response.status_code, 200)
+        # compare against what is in the db
+        showings = Showing.objects.all()
+        serializer = ShowingDetailSerializer(showings, many=True)
+        self.assertEqual(response.data, serializer.data)
+
+    def test_create_showing_good_payload(self):
+        showings = Showing.objects.all().count()
+        # test the positive assertion
+        response = self.client.post(reverse('showing_list_create'),
+                                   data=json.dumps(self.valid_payload),
+                                   content_type='application/json')
+        print(self.valid_payload)
+        print(response)
+        self.assertEqual(response.status_code, 201)
+        updated_showings = Showing.objects.all()
+        self.assertEqual(showings + 1, updated_showings.count())
+
+    def test_create_showing_bad_payloads(self):
+        # make sure the invalid payloads fail
+        for payload in (self.invalid_payload1, self.invalid_payload2, self.invalid_payload3):
+            response = self.client.post(reverse('showing_list_create'),
+                                        data=json.dumps(payload),
+                                        content_type='application/json')
+            self.assertEqual(response.status_code, 400)
+
+
 
