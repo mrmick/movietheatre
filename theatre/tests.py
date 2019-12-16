@@ -1,6 +1,7 @@
 from django.test import TestCase, Client
 from theatre.models import Movie, Showing, Room, Ticket
-from theatre.serializers import RoomSerializer, MovieSerializer, ShowingSerializer, ShowingDetailSerializer
+from theatre.serializers import RoomSerializer, MovieSerializer, ShowingSerializer, ShowingDetailSerializer, \
+    TicketSerializer, TicketDetailSerializer
 from django.utils import timezone
 from django.urls import reverse
 import json
@@ -193,7 +194,7 @@ class ShowingListViewTests(TestCase):
         self.movie3 = Movie.objects.create(title="Star Wars: Return of the Jedi")
 
         #we really don't care about the time in the tests here, just that it exists
-        Showing.objects.create(room=self.room1, movie=self.movie1, showtime=timezone.now())
+        self.showing1 = Showing.objects.create(room=self.room1, movie=self.movie1, showtime=timezone.now())
         Showing.objects.create(room=self.room2, movie=self.movie2, showtime=timezone.now())
         Showing.objects.create(room=self.room3, movie=self.movie3, showtime=timezone.now())
 
@@ -233,8 +234,6 @@ class ShowingListViewTests(TestCase):
         response = self.client.post(reverse('showing_list_create'),
                                    data=json.dumps(self.valid_payload),
                                    content_type='application/json')
-        print(self.valid_payload)
-        print(response)
         self.assertEqual(response.status_code, 201)
         updated_showings = Showing.objects.all()
         self.assertEqual(showings + 1, updated_showings.count())
@@ -247,5 +246,77 @@ class ShowingListViewTests(TestCase):
                                         content_type='application/json')
             self.assertEqual(response.status_code, 400)
 
+    def test_detailed_view_loads_single(self):
+        response = self.client.get(reverse('showing_detail_update',
+                                           kwargs={'pk': self.showing1.pk}))
+        # make sure we get the appropriate status code
+        self.assertEqual(response.status_code, 200)
+        # compare against what is in the db
+        serializer = ShowingDetailSerializer(self.showing1)
+        self.assertEqual(response.data, serializer.data)
 
+
+class TicketListViewTests(TestCase):
+    def setUp(self):
+        self.room1 = Room.objects.create(name="Jaba Room", seats_capacity=100)
+        self.room2 = Room.objects.create(name="Yoda Room", seats_capacity=150)
+        self.room3 = Room.objects.create(name="Han Room", seats_capacity=100)
+        self.movie1 = Movie.objects.create(title="Star Wars: A New Hope")
+        self.movie2 = Movie.objects.create(title="Star Wars: The Empire Strikes Back")
+        self.movie3 = Movie.objects.create(title="Star Wars: Return of the Jedi")
+
+        #we really don't care about the time in the tests here, just that it exists
+        self.showing1 = Showing.objects.create(room=self.room1, movie=self.movie1, showtime=timezone.now())
+        self.showing2 = Showing.objects.create(room=self.room2, movie=self.movie2, showtime=timezone.now())
+        self.showing3 = Showing.objects.create(room=self.room3, movie=self.movie3, showtime=timezone.now())
+
+        self.ticket1 = Ticket.objects.create(showing=self.showing1)
+        Ticket.objects.create(showing=self.showing1)
+        Ticket.objects.create(showing=self.showing1)
+
+        self.valid_payload = {
+            'showing': self.showing1.pk,
+        }
+        self.invalid_payload = {
+            'showing': '',
+        }
+
+
+    def test_list_all_tickets(self):
+        response = self.client.get(reverse('showing_ticket',
+                                   kwargs={'pk': self.showing1.pk}))
+        # make sure we get the appropriate status code
+        self.assertEqual(response.status_code, 200)
+        # compare against what is in the db
+        tickets = Ticket.objects.all()
+        serializer = TicketDetailSerializer(tickets,many=True)
+        self.assertEqual(response.data, serializer.data)
+
+    def test_create_ticket_good_payload(self):
+        tickets = Ticket.objects.filter(showing=self.showing1.pk).count()
+        # test the positive assertion
+        response = self.client.post(reverse('showing_ticket',
+                                            kwargs={'pk': self.showing1.pk}),
+                                   data=json.dumps(self.valid_payload),
+                                   content_type='application/json')
+        self.assertEqual(response.status_code, 201)
+        updated_tickets = Ticket.objects.all()
+        self.assertEqual(tickets + 1, updated_tickets.count())
+
+    def test_create_ticket_bad_payloads(self):
+        # make sure the invalid payloads fail
+        response = self.client.post(reverse('showing_ticket',
+                                            kwargs={'pk': self.showing1.pk}),
+                                    data=json.dumps(self.invalid_payload),
+                                    content_type='application/json')
+        self.assertEqual(response.status_code, 400)
+
+    def test_detailed_view_loads_single(self):
+        response = self.client.get(reverse('ticket_detail',
+                                           kwargs={'pk': self.ticket1.pk}))
+        # make sure we get the appropriate status code
+        self.assertEqual(response.status_code, 200)
+        # compare against what is in the db
+        serializer = TicketDetailSerializer(self.ticket1)
+        self.assertEqual(response.data, serializer.data)
 
