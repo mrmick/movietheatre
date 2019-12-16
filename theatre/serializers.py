@@ -49,22 +49,14 @@ class ShowingSerializer(serializers.ModelSerializer):
 
 
 class ShowingDetailSerializer(serializers.ModelSerializer):
-    tickets = serializers.SerializerMethodField()
+    room = serializers.CharField(source='room.name')
+    movie = serializers.CharField(source='movie.title')
+    showtime = serializers.DateTimeField(format="%d/%m/%Y, %H:%M:%S")
 
     class Meta:
         model = Showing
-        fields = ['id', 'room', 'movie', 'showtime', 'sold_seats', 'available_seats', 'tickets']
+        fields = ['id', 'room', 'movie', 'showtime', 'sold_seats', 'available_seats']
         read_only_fields = ['id', 'room', 'movie', 'showtime', 'sold_seats', 'available_seats']
-
-    def get_tickets(self, obj):
-        return None
-
-    def update(self, instance, validated_data):
-        tickets = validated_data.get('tickets')
-        if instance.available_seats >= tickets:
-            instance.sold_seats += tickets
-        instance.save()
-        return instance
 
 
 class TicketSerializer(serializers.ModelSerializer):

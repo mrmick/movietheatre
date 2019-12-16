@@ -22,6 +22,13 @@ class ShowingList(generics.ListCreateAPIView):
     queryset = Showing.objects.all()
     serializer_class = ShowingSerializer
 
+    def get_serializer_class(self):
+        if self.request.method in SAFE_METHODS:
+            return ShowingDetailSerializer
+        else:
+            return ShowingSerializer
+
+
 
 class ShowingDetail(generics.RetrieveUpdateAPIView):
     queryset = Showing.objects.all()
