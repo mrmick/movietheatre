@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 
 class RoomSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Room
         fields = ['id', 'name', 'seats_capacity']
@@ -25,6 +26,7 @@ class RoomSerializer(serializers.ModelSerializer):
 
 
 class MovieSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Movie
         fields = ['id', 'title']
@@ -39,7 +41,27 @@ class MovieSerializer(serializers.ModelSerializer):
 
 
 class ShowingSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Showing
-        fields = ['id', 'room', 'movie', 'showtime', 'sold_seats', 'available_seats', 'seats_available']
-        read_only_fields = ['available_seats', 'seats_available']
+        fields = ['id', 'room', 'movie', 'showtime', 'seats_available']
+        read_only_fields = ['seats_available']
+
+
+class ShowingDetailSerializer(serializers.ModelSerializer):
+    tickets = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Showing
+        fields = ['id', 'room', 'movie', 'showtime', 'sold_seats', 'available_seats', 'tickets']
+        read_only_fields = ['id', 'room', 'movie', 'showtime', 'sold_seats', 'available_seats']
+
+    def get_tickets(self, obj):
+        return None
+
+    def update(self, instance, validated_data):
+        tickets = validated_data.get('tickets')
+        if instance.available_seats >= tickets:
+            instance.sold_seats += tickets
+        instance.save()
+        return instance
