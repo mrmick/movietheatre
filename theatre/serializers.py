@@ -1,4 +1,4 @@
-from theatre.models import Room, Movie, Showing
+from theatre.models import Room, Movie, Showing, Ticket
 from rest_framework import serializers
 
 
@@ -65,3 +65,19 @@ class ShowingDetailSerializer(serializers.ModelSerializer):
             instance.sold_seats += tickets
         instance.save()
         return instance
+
+
+class TicketSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Ticket
+        fields = ['id', 'showing']
+
+
+class TicketDetailSerializer(serializers.ModelSerializer):
+
+    showing = ShowingSerializer()
+
+    class Meta:
+        model = Ticket
+        fields = ['id', 'showing']

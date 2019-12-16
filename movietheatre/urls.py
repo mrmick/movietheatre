@@ -22,5 +22,7 @@ urlpatterns = [
     path('rooms/', views.RoomList.as_view(), name='room_list_create'),
     path('movies/', views.MovieList.as_view(), name='movie_list_create'),
     path('showings/', views.ShowingList.as_view(), name='showing_list_create'),
+    re_path('tickets/(?P<pk>[0-9]+)', views.TicketDetail.as_view(), name='ticket_detail'),
+    re_path('showings/(?P<pk>[0-9]+)/ticket', views.ShowingTicket.as_view(), name='showing_ticket'),
     re_path('showings/(?P<pk>[0-9]+)', views.ShowingDetail.as_view(), name='showing_detail_update'),
 ]

@@ -54,3 +54,11 @@ class Showing(models.Model):
         if requested:
             return self.available_seats() >= requested
         return self.available_seats() > 0
+
+
+class Ticket(models.Model):
+    """
+    Very simple representation of a ticket to a movie showing
+    """
+    showing = models.ForeignKey(Showing, on_delete=models.CASCADE)
+
