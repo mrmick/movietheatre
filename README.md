@@ -20,3 +20,17 @@ The API should be able to do the following
 What we're looking for is an API-only implementation of the service, written in Django. 
 We are not looking for real payments, nor do we care about separating user roles - the API can be anonymous. 
 We would like to see testing, though. 
+
+The endpoints are as follows:
+* **/rooms/** 
+_list and create rooms_
+* **/movies/** 
+_list and create movies_
+* **/showings/** 
+_list and create showings_
+* **/showings/< id >** 
+_details of a single showing_
+* **/showings/< id >/ticket** 
+_list and create tickets for a showing_
+* **/tickets/< id >** 
+_details of a ticket_
