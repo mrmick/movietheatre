@@ -109,7 +109,6 @@ class RoomListViewTests(TestCase):
         updated_rooms = Room.objects.all()
         self.assertEqual(rooms + 1, updated_rooms.count())
 
-
     def test_create_room_bad_payloads(self):
         # make sure the invalid payloads fail
         for payload in (self.invalid_payload1, self.invalid_payload2):
@@ -117,4 +116,44 @@ class RoomListViewTests(TestCase):
                                         data=json.dumps(payload),
                                         content_type='application/json')
             self.assertEqual(response.status_code, 400)
+
+
+class MovieListViewTests(TestCase):
+    def setUp(self):
+        Movie.objects.create(title="Star Wars: A New Hope")
+        Movie.objects.create(title="Star Wars: The Empire Strikes Back")
+        Movie.objects.create(title="Star Wars: Return of the Jedi")
+
+        self.valid_payload = {
+            'title': 'Solo:  A Star Wars Story'
+        }
+        self.invalid_payload = {
+            'title': ''
+        }
+
+    def test_list_all_movies(self):
+        response = self.client.get(reverse('movie_list_create'))
+        # make sure we get the appropriate status code
+        self.assertEqual(response.status_code, 200)
+        # compare against what is in the db
+        movies = Movie.objects.all()
+        serializer = MovieSerializer(movies, many=True)
+        self.assertEqual(response.data, serializer.data)
+
+    def test_create_movie_good_payload(self):
+        movies = Movie.objects.all().count()
+        # test the positive assertion
+        response = self.client.post(reverse('movie_list_create'),
+                                   data=json.dumps(self.valid_payload),
+                                   content_type='application/json')
+        self.assertEqual(response.status_code, 201)
+        updated_movies = Movie.objects.all()
+        self.assertEqual(movies + 1, updated_movies.count())
+
+    def test_create_movie_bad_payloads(self):
+        # make sure the invalid payloads fail
+        response = self.client.post(reverse('movie_list_create'),
+                                    data=json.dumps(self.invalid_payload),
+                                    content_type='application/json')
+        self.assertEqual(response.status_code, 400)
 
