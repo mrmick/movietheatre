@@ -1,6 +1,9 @@
-from django.test import TestCase
+from django.test import TestCase, Client
 from theatre.models import Movie, Showing, Room
+from theatre.serializers import RoomSerializer, MovieSerializer, ShowingSerializer
 from django.utils import timezone
+from django.urls import reverse
+import json
 
 
 # Create your tests here.
@@ -66,3 +69,52 @@ class ShowingTests(TestCase):
         self.assertTrue(self.showing.seats_available(requested=20))
         self.assertTrue(self.showing.seats_available(requested=50))
         self.assertFalse(self.showing.seats_available(requested=51))
+
+
+class RoomListViewTests(TestCase):
+    def setUp(self):
+        Room.objects.create(name="Jaba Room", seats_capacity=100)
+        Room.objects.create(name="Yoda Room", seats_capacity=150)
+        Room.objects.create(name="Han Room", seats_capacity=100)
+
+        self.valid_payload = {
+            'name': 'Leia Room',
+            'seats_capacity': 100
+        }
+        self.invalid_payload1 = {
+            'name': '',
+            'seats_capacity': 100
+        }
+        self.invalid_payload2 = {
+            'name': 'Leia Room',
+            'seats_capacity': 0
+        }
+
+    def test_list_all_rooms(self):
+        response = self.client.get(reverse('room_list_create'))
+        # make sure we get the appropriate status code
+        self.assertEqual(response.status_code, 200)
+        # compare against what is in the db
+        rooms = Room.objects.all()
+        serializer = RoomSerializer(rooms, many=True)
+        self.assertEqual(response.data, serializer.data)
+
+    def test_create_room_good_payload(self):
+        rooms = Room.objects.all().count()
+        # test the positive assertion
+        response = self.client.post(reverse('room_list_create'),
+                                   data=json.dumps(self.valid_payload),
+                                   content_type='application/json')
+        self.assertEqual(response.status_code, 201)
+        updated_rooms = Room.objects.all()
+        self.assertEqual(rooms + 1, updated_rooms.count())
+
+
+    def test_create_room_bad_payloads(self):
+        # make sure the invalid payloads fail
+        for payload in (self.invalid_payload1, self.invalid_payload2):
+            response = self.client.post(reverse('room_list_create'),
+                                        data=json.dumps(payload),
+                                        content_type='application/json')
+            self.assertEqual(response.status_code, 400)
+

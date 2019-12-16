@@ -17,3 +17,8 @@ class MovieList(generics.ListCreateAPIView):
 class ShowingList(generics.ListCreateAPIView):
     queryset = Showing.objects.all()
     serializer_class = ShowingSerializer
+
+
+class ShowingDetail(generics.RetrieveUpdateAPIView):
+    queryset = Showing.objects.all()
+    serializer_class = ShowingSerializer

@@ -19,7 +19,7 @@ from theatre import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('rooms/', views.RoomList.as_view()),
-    path('movies/', views.MovieList.as_view()),
-    path('showings/', views.ShowingList.as_view()),
+    path('rooms/', views.RoomList.as_view(), name='room_list_create'),
+    path('movies/', views.MovieList.as_view(), name='movie_list_create'),
+    path('showings/', views.ShowingList.as_view(), name='showing_list_create'),
 ]
